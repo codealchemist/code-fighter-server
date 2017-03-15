@@ -1,0 +1,22 @@
+{
+  "name": "code-fighter-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codealchemist/code-fighter-server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/codealchemist/code-fighter-server/issues"
+  },
+  "homepage": "https://github.com/codealchemist/code-fighter-server#readme",
+  "dependencies": {
+    "vectors": "^0.1.0"
+  }
+}
