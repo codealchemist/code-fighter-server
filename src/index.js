@@ -8,7 +8,6 @@ const clients = []
 const classes = require('./classes')
 const PedrinGaul = require('./players/PedrinGaul')
 
-
 const arena = new classes.Arena();
 
 for (var i = 0; i < 3; i++) {
@@ -45,11 +44,20 @@ io.on('connection', function(client) {
   console.log('Added new connection')
 });
 
-
+const cachedFrames = []
 sendStatus()
 function sendStatus () {
-  for (var i = 0; i < clients.length; i++) {
-    clients[i].emit('update_finish', JSON.stringify(arena.elements));
+
+  if (arena.elements.length > 0) {
+    cachedFrames.push(JSON.parse(JSON.stringify(arena.elements)))
   }
-  setTimeout(sendStatus, 1000);
+
+  if(cachedFrames.length > 50) {
+    for (var i = 0; i < clients.length; i++) {
+      clients[i].emit('update_finish', JSON.stringify(cachedFrames));
+    }
+    cachedFrames.length = 0
+  }
+
+  setTimeout(sendStatus, 16);
 }
