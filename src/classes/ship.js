@@ -26,7 +26,7 @@ module.exports = class Ship {
   }
 
   update (elapsedTime, arenaStatus) {
-    this.player.update(elapsedTime, this.userProperties, arenaStatus)
-    // todo, here fire the ship events
+    return this.player.update(elapsedTime, this.userProperties, arenaStatus)
+    // TODO, here fire the ship events
   }
 }

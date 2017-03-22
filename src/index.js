@@ -1,20 +1,19 @@
 var app = require('express')()
 var server = require('http').createServer(app)
 var io = require('socket.io')(server)
-const port = 3000
+const port = 3001
 const clients = []
-
-// temporal includes
 const classes = require('./classes')
-const PedrinGaul = require('./players/PedrinGaul')
+
 
 const arena = new classes.Arena();
 
 for (var i = 0; i < 3; i++) {
-  arena.addPlayer(new PedrinGaul())
+  arena.addPlayer(new classes.Player(i + ''))
   // MarioBaracus is for play in team mode
   // app.arena.addPlayer(new MarioBaracus())
 }
+arena.start();
 
 app.get('/', function(req, res) {
   res.send('hi world')
@@ -28,11 +27,9 @@ app.get('/stop', function(req, res) {
   res.send('Arena has stoped')
 })
 app.get('/addPlayer', function(req, res) {
-  arena.addPlayer(new PedrinGaul())
+  arena.addPlayer(new classes.Player())
   res.send('Player has added')
 })
-
-
 
 
 server.listen(port, function() {
@@ -52,7 +49,8 @@ function sendStatus () {
     cachedFrames.push(JSON.parse(JSON.stringify(arena.elements)))
   }
 
-  if(cachedFrames.length > 50) {
+  if(cachedFrames.length > 100) {
+    console.log('Sending frames');
     for (var i = 0; i < clients.length; i++) {
       clients[i].emit('update_finish', JSON.stringify(cachedFrames));
     }

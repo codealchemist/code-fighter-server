@@ -7,6 +7,7 @@ const Ship = require('./ship') ;
 
 let initialTime;
 let finalTime;
+let updateCount = 0;
 
 module.exports = class Arena {
   constructor() {
@@ -14,6 +15,7 @@ module.exports = class Arena {
     this.elements = []
     this.width = 800
     this.height = 600
+    this.playersPromise = []
   }
   start () {
     console.log('Arena - start');
@@ -26,14 +28,20 @@ module.exports = class Arena {
     this.runing = false;
   }
   update (elapsedTime) {
-    console.log('Arena - update', elapsedTime, this.elements[0].state.deaths, this.elements[1].state.deaths)
+    if (updateCount > 500) {
+      console.log('Arena - update', elapsedTime, this.elements[0].state.deaths, this.elements[1].state.deaths)
+      updateCount = 0
+    }
+    updateCount++
+
     let finalTime = new Date()
+    this.playersPromise.length = 0
 
     for (let element in this.elements) {
         let currentElement = this.elements[element]
         switch (currentElement.type) {
           case 'ship':
-            this.updateShip(elapsedTime, currentElement)
+            this.playersPromise.push(this.updateShip(elapsedTime, currentElement))
             break
           case 'bullet':
             this.updateBullet(elapsedTime, currentElement)
@@ -41,67 +49,79 @@ module.exports = class Arena {
         }
       }
     if (this.runing) {
-      setTimeout(() => {
-        this.update(finalTime - initialTime)
-        initialTime = finalTime
-      }, 0);
+      Promise.all(this.playersPromise).then(() => {
+        setTimeout(() => {
+          this.update(finalTime - initialTime)
+          initialTime = finalTime
+        }, 0);
+      }).catch((e) => {
+        console.error(e)
+      })
+
     }
   }
   updateShip (elapsedTime, element) {
-    element.ship.update(elapsedTime, this.getStatus(element))
+    // TODO add race condition to avoid inifinite loops
+    return element.ship.update(elapsedTime, this.getStatus(element)).then(({newUserProperties, time}) => {
 
-    // check the output of the player
-    if (Math.abs(element.ship.userProperties.aceleration) > element.ship.intrinsicProperties.maxAceleration) {
-      element.ship.userProperties.aceleration = element.ship.intrinsicProperties.maxAceleration * Math.sign(element.ship.userProperties.aceleration)
-    }
-    if (Math.abs(element.ship.userProperties.rotate) > element.ship.intrinsicProperties.maxAngularVelocity) {
-      element.ship.userProperties.rotate = element.ship.intrinsicProperties.maxAngularVelocity * Math.sign(element.ship.userProperties.rotate)
-    }
+      element.ship.userProperties = newUserProperties;
+      // check the output of the player
+      if (Math.abs(element.ship.userProperties.aceleration) > element.ship.intrinsicProperties.maxAceleration) {
+        element.ship.userProperties.aceleration = element.ship.intrinsicProperties.maxAceleration * Math.sign(element.ship.userProperties.aceleration)
+      }
+      if (Math.abs(element.ship.userProperties.rotate) > element.ship.intrinsicProperties.maxAngularVelocity) {
+        element.ship.userProperties.rotate = element.ship.intrinsicProperties.maxAngularVelocity * Math.sign(element.ship.userProperties.rotate)
+      }
 
-    // the physics of the arena
+      // the physics of the arena
 
-    element.state.velocity += element.ship.intrinsicProperties.maxVelocity * element.ship.userProperties.aceleration * (elapsedTime / 1000)
-    element.state.angularVelocity += element.ship.intrinsicProperties.maxAngularVelocity * element.ship.userProperties.rotate * (elapsedTime / 1000)
+      element.state.velocity += element.ship.intrinsicProperties.maxVelocity * element.ship.userProperties.aceleration * (elapsedTime / 1000)
+      element.state.angularVelocity += element.ship.intrinsicProperties.maxAngularVelocity * element.ship.userProperties.rotate * (elapsedTime / 1000)
 
-    if (Math.abs(element.state.velocity) > element.ship.intrinsicProperties.maxVelocity) {
-      element.state.velocity = element.ship.intrinsicProperties.maxVelocity * Math.sign(element.state.velocity)
-    }
+      if (Math.abs(element.state.velocity) > element.ship.intrinsicProperties.maxVelocity) {
+        element.state.velocity = element.ship.intrinsicProperties.maxVelocity * Math.sign(element.state.velocity)
+      }
 
-    // if the velocity = maxVelocity then maxAngularVelocity = maxAngularVelocity / 4
-    const maxAngRelativeToVelocity = (-(3 / 4) * (element.ship.intrinsicProperties.maxAngularVelocity / element.ship.intrinsicProperties.maxVelocity) * element.state.velocity + element.ship.intrinsicProperties.maxAngularVelocity)
-    if (Math.abs(element.state.angularVelocity) > maxAngRelativeToVelocity) {
-      element.state.angularVelocity = maxAngRelativeToVelocity * Math.sign(element.state.angularVelocity)
-    }
+      // if the velocity = maxVelocity then maxAngularVelocity = maxAngularVelocity / 4
+      const maxAngRelativeToVelocity = (-(3 / 4) * (element.ship.intrinsicProperties.maxAngularVelocity / element.ship.intrinsicProperties.maxVelocity) * element.state.velocity + element.ship.intrinsicProperties.maxAngularVelocity)
+      if (Math.abs(element.state.angularVelocity) > maxAngRelativeToVelocity) {
+        element.state.angularVelocity = maxAngRelativeToVelocity * Math.sign(element.state.angularVelocity)
+      }
 
-    element.state.x += element.state.velocity * Math.cos(element.state.direction) * (elapsedTime / 1000)
-    element.state.y += element.state.velocity * Math.sin(element.state.direction) * (elapsedTime / 1000)
-    element.state.direction += element.state.angularVelocity * (elapsedTime / 1000)
+      element.state.x += element.state.velocity * Math.cos(element.state.direction) * (elapsedTime / 1000)
+      element.state.y += element.state.velocity * Math.sin(element.state.direction) * (elapsedTime / 1000)
+      element.state.direction += element.state.angularVelocity * (elapsedTime / 1000)
 
-    // fire if is not reloading and the player want to fire
-    if (!element.state.reloadingBullet && element.ship.userProperties.fire) {
-      element.ship.userProperties.fire = false
-      element.state.reloadingBullet = element.ship.intrinsicProperties.reloadingTime
+      // fire if is not reloading and the player want to fire
+      if (!element.state.reloadingBullet && element.ship.userProperties.fire) {
+        element.ship.userProperties.fire = false
+        element.state.reloadingBullet = element.ship.intrinsicProperties.reloadingTime
 
-      this.elements.push({
-        type: 'bullet',
-        bullet: new Bullet(element.state, element.ship),
-        state: {
-          x: element.state.x,
-          y: element.state.y,
-          direction: element.state.direction,
-          velocity: 500
-        }
-      })
-    }
-    element.state.reloadingBullet -= elapsedTime
-    if (element.state.reloadingBullet < 0) {
-      delete element.state.reloadingBullet
-    }
+        this.elements.push({
+          type: 'bullet',
+          bullet: new Bullet(element.state, element.ship),
+          state: {
+            x: element.state.x,
+            y: element.state.y,
+            direction: element.state.direction,
+            velocity: 500
+          }
+        })
+      }
+      element.state.reloadingBullet -= elapsedTime
+      if (element.state.reloadingBullet < 0) {
+        delete element.state.reloadingBullet
+      }
 
-    // check if some ship is death
-    if (element.state.energy <= 0) {
-      this.respawnShip(element)
-    }
+      // check if some ship is death
+      if (element.state.energy <= 0) {
+        this.respawnShip(element)
+      }
+    }).catch((e) => {
+      console.error(e)
+    })
+
+
   }
 
   updateBullet (elapsedTime, element) {
@@ -207,7 +227,7 @@ module.exports = class Arena {
         for (let i = 0; i < this.elements.length; i++) {
           if (this.elements[i].type === 'ship') {
             if (this.elements[i].ship === element.ship) {
-                // generate a copy of the ship. To avoid changes from the player
+              // generate a copy of the ship. To avoid changes from the player
               delete this.elements[i].ship.p
               resp.myShip = JSON.parse(JSON.stringify(this.elements[i]))
               break
