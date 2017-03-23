@@ -9,7 +9,7 @@ const classes = require('./classes')
 const arena = new classes.Arena();
 
 for (var i = 0; i < 3; i++) {
-  arena.addPlayer(new classes.Player(i + ''))
+  arena.addPlayer(new classes.Player(i + 1))
   // MarioBaracus is for play in team mode
   // app.arena.addPlayer(new MarioBaracus())
 }
@@ -42,6 +42,8 @@ io.on('connection', function(client) {
 });
 
 const cachedFrames = []
+const framesInterlive = 1000
+let lastFrameSend = new Date();
 sendStatus()
 function sendStatus () {
 
@@ -49,12 +51,13 @@ function sendStatus () {
     cachedFrames.push(JSON.parse(JSON.stringify(arena.elements)))
   }
 
-  if(cachedFrames.length > 100) {
-    console.log('Sending frames');
+  if(new Date() - lastFrameSend > framesInterlive) {
+    console.log('Sending ' + cachedFrames.length + ' frames');
     for (var i = 0; i < clients.length; i++) {
       clients[i].emit('update_finish', JSON.stringify(cachedFrames));
     }
     cachedFrames.length = 0
+    lastFrameSend = new Date();
   }
 
   setTimeout(sendStatus, 16);

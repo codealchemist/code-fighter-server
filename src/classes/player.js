@@ -1,5 +1,5 @@
 const cp = require('child_process');
-const timeout = 500
+const timeout = 5
 var n;
 
 module.exports = class Player {
@@ -10,16 +10,21 @@ module.exports = class Player {
 		this.childProcess = function() {
 			return this
 		}.bind(n);
-
-		n.send({
+		this.childProcess().send({
 			type:'initialize',
 			data: {
 				id
 			}
 		})
+		this.childProcess().on('message', (newUserProperties) => {
+			this.resolvePromise({
+				newUserProperties,
+				time: new Date() - this.initialDate
+			})
+		})
 	}
 	update(elapsedTime, userProperties, arenaStatus) {
-		let initialDate = new Date();
+		this.initialDate = new Date();
 		this.childProcess().send({
 			type: 'makeUpdate',
 			data: {
@@ -31,16 +36,14 @@ module.exports = class Player {
 
 		return new Promise((resolve, reject) => {
 			// wait for child process response
+			this.resolvePromise = resolve;
 
-			// TODO move the 'on' from here. This method is executed several times!!
-			this.childProcess().on('message', function(newUserProperties) {
-				resolve({
-					newUserProperties,
-					time: new Date() - initialDate
-				})
-			})
 			setTimeout(() => {
-				reject('out of time')
+				// out of time, resolve with previous values
+				resolve({
+					newUserProperties: userProperties,
+					time: new Date() - this.initialDate
+				})
 			}, timeout)
 		});
 	}

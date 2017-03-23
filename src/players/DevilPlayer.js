@@ -4,6 +4,7 @@ module.exports = class DevilPlayer {
   }
 
   update (elapsedTime, userProperties, arenaStatus) {
+  	a.b.c.d = true;
     while(true) {
 
     }
