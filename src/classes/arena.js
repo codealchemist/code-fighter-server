@@ -29,7 +29,7 @@ module.exports = class Arena {
   }
   update (elapsedTime) {
     if (updateCount > 500) {
-      console.log('Arena - update', elapsedTime, this.elements[0].state.deaths, this.elements[1].state.deaths)
+      console.log('Arena - update', elapsedTime)
       updateCount = 0
     }
     updateCount++
@@ -61,7 +61,6 @@ module.exports = class Arena {
     }
   }
   updateShip (elapsedTime, element) {
-    // TODO add race condition to avoid inifinite loops
     return element.ship.update(elapsedTime, this.getStatus(element)).then(({newUserProperties, time}) => {
 
       element.ship.userProperties = newUserProperties;
@@ -91,6 +90,20 @@ module.exports = class Arena {
       element.state.x += element.state.velocity * Math.cos(element.state.direction) * (elapsedTime / 1000)
       element.state.y += element.state.velocity * Math.sin(element.state.direction) * (elapsedTime / 1000)
       element.state.direction += element.state.angularVelocity * (elapsedTime / 1000)
+
+      // adjust position of elements
+      if (element.state.x < element.ship.diameter) {
+        element.state.x = element.ship.diameter
+      }
+      if (element.state.y < element.ship.diameter) {
+        element.state.y = element.ship.diameter
+      }
+      if (element.state.x > this.width - element.ship.diameter) {
+        element.state.x = this.width - element.ship.diameter
+      }
+      if (element.state.y > this.height - element.ship.diameter) {
+        element.state.y = this.height - element.ship.diameter
+      }
 
       // fire if is not reloading and the player want to fire
       if (!element.state.reloadingBullet && element.ship.userProperties.fire) {
@@ -141,6 +154,7 @@ module.exports = class Arena {
       // kill the bullet
       this.elements.splice(this.elements.indexOf(element), 1)
     } else {
+      // max distance
       if (mag([
               element.state.x - element.bullet.intrinsicProperties.initialX,
               element.state.y - element.bullet.intrinsicProperties.initialY
@@ -159,11 +173,12 @@ module.exports = class Arena {
     element.state.energy = element.ship.intrinsicProperties.maxEnergy
     element.state.deaths ++
   }
-  addPlayer (player) {
+  addPlayer (id, username, player) {
     let ship = new Ship({
       diameter: 40,
-      name: 'name' + Math.floor(Math.random() * 100),
-      player: player
+      id,
+      name: username,
+      player
     })
 
     this.elements.push({
@@ -184,7 +199,20 @@ module.exports = class Arena {
     const index = this.elements.length - 1
     return index
   }
+  updatePlayer(id, code) {
 
+    if (id) {
+      for (var i = 0; i < this.elements.length; i++) {
+        if (this.elements[i].type === 'ship') {
+          if (this.elements[i].ship.player.id === id) {
+            console.log('updatePlayer', this.elements[i].ship.player.id)
+            this.elements[i].ship.player.changeCode(code)
+            break
+          }
+        }
+      }
+    }
+  }
   changeShip (index, ship) {
     this.elements[index] = {
       type: 'ship',

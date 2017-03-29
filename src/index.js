@@ -1,18 +1,31 @@
 var app = require('express')()
+var bodyParser = require("body-parser");
 var server = require('http').createServer(app)
 var io = require('socket.io')(server)
 const port = 3001
 const clients = []
 const classes = require('./classes')
 
+////////////////////////////////////
+/////// Configuration //////////////
+////////////////////////////////////
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+
+
+////////////////////////////////////
+///////// Game Start ///////////////
+////////////////////////////////////
 
 const arena = new classes.Arena();
+const players = {};
 
-for (var i = 0; i < 3; i++) {
-  arena.addPlayer(new classes.Player(i + 1))
-  // MarioBaracus is for play in team mode
-  // app.arena.addPlayer(new MarioBaracus())
-}
 arena.start();
 
 app.get('/', function(req, res) {
@@ -26,11 +39,20 @@ app.get('/stop', function(req, res) {
   arena.stop();
   res.send('Arena has stoped')
 })
-app.get('/addPlayer', function(req, res) {
-  arena.addPlayer(new classes.Player())
-  res.send('Player has added')
-})
 
+app.post('/player',bodyParser.json(), function(req, res) {
+  if (players[req.body.username]) {
+    console.log('Player update')
+    players[req.body.username] = req.body.code
+    arena.updatePlayer(req.body.username, req.body.code)
+  } else {
+    console.log('Player new')
+    players[req.body.username] = req.body.code
+    // Temporal, id === username
+    arena.addPlayer(req.body.username, req.body.username, new classes.Player(req.body.username, req.body.code))
+  }
+  res.send('ok');
+})
 
 server.listen(port, function() {
     console.log('Server running at http://localhost:' + port)

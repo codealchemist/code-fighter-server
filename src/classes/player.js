@@ -3,24 +3,33 @@ const timeout = 5
 var n;
 
 module.exports = class Player {
-	constructor(id) {
-		// TODO send player id to child process
+	constructor(id, code) {
 		n = cp.fork(`./players/index.js`);
 
 		this.childProcess = function() {
 			return this
 		}.bind(n);
+		this.id = id
+		this.changeCode(code)
+		this.childProcess().on('message', (message) => {
+			switch(message.type) {
+				case 'makeUpdate':
+					this.resolvePromise({
+						newUserProperties: message.data,
+						time: new Date() - this.initialDate
+					})
+				break;
+			}
+
+		})
+	}
+	changeCode(code) {
 		this.childProcess().send({
 			type:'initialize',
 			data: {
-				id
+				id: this.id,
+				code
 			}
-		})
-		this.childProcess().on('message', (newUserProperties) => {
-			this.resolvePromise({
-				newUserProperties,
-				time: new Date() - this.initialDate
-			})
 		})
 	}
 	update(elapsedTime, userProperties, arenaStatus) {
