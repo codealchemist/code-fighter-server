@@ -61,7 +61,10 @@ module.exports = class Arena {
     }
   }
   updateShip (elapsedTime, element) {
-    return element.ship.update(elapsedTime, this.getStatus(element)).then(({newUserProperties, time}) => {
+    return element.ship.update(elapsedTime, this.getStatus(element)).then(({newUserProperties, error, time}) => {
+
+      // add error information in the element
+      element.error = error
 
       element.ship.userProperties = newUserProperties;
       // check the output of the player
@@ -82,7 +85,7 @@ module.exports = class Arena {
       }
 
       // if the velocity = maxVelocity then maxAngularVelocity = maxAngularVelocity / 4
-      const maxAngRelativeToVelocity = (-(3 / 4) * (element.ship.intrinsicProperties.maxAngularVelocity / element.ship.intrinsicProperties.maxVelocity) * element.state.velocity + element.ship.intrinsicProperties.maxAngularVelocity)
+      const maxAngRelativeToVelocity = (-(3 / 4) * (element.ship.intrinsicProperties.maxAngularVelocity / element.ship.intrinsicProperties.maxVelocity) * Math.abs(element.state.velocity) + element.ship.intrinsicProperties.maxAngularVelocity)
       if (Math.abs(element.state.angularVelocity) > maxAngRelativeToVelocity) {
         element.state.angularVelocity = maxAngRelativeToVelocity * Math.sign(element.state.angularVelocity)
       }
@@ -173,13 +176,14 @@ module.exports = class Arena {
     element.state.energy = element.ship.intrinsicProperties.maxEnergy
     element.state.deaths ++
   }
-  addPlayer (id, username, player) {
+  addPlayer (id, username, color, guid, player) {
     let ship = new Ship({
       diameter: 40,
       id,
       name: username,
-      player
-    })
+      player,
+      color
+    });
 
     this.elements.push({
       type: 'ship',
@@ -193,7 +197,8 @@ module.exports = class Arena {
         angularVelocity: 0, // from 0 to maxAngularVelocity
         energy: ship.intrinsicProperties.maxEnergy,
         deaths: 0
-      }
+      },
+      guid
     })
 
     const index = this.elements.length - 1

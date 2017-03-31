@@ -2,6 +2,7 @@ var app = require('express')()
 var bodyParser = require("body-parser");
 var server = require('http').createServer(app)
 var io = require('socket.io')(server)
+var Guid = require('guid')
 const port = 3001
 const clients = []
 const classes = require('./classes')
@@ -49,7 +50,7 @@ app.post('/player',bodyParser.json(), function(req, res) {
     console.log('Player new')
     players[req.body.username] = req.body.code
     // Temporal, id === username
-    arena.addPlayer(req.body.username, req.body.username, new classes.Player(req.body.username, req.body.code))
+    arena.addPlayer(req.body.username, req.body.username, req.body.color, req.body.guid, new classes.Player(req.body.username, req.body.code))
   }
   res.send('ok');
 })
@@ -60,6 +61,9 @@ server.listen(port, function() {
 
 io.on('connection', function(client) {
   clients.push(client)
+  const clientId = Guid.raw();
+  client.id = clientId;
+  client.emit('handshake', clientId);
   console.log('Added new connection')
 });
 
@@ -80,6 +84,19 @@ function sendStatus () {
     }
     cachedFrames.length = 0
     lastFrameSend = new Date();
+  }
+
+  // check for errors
+  for (var i = 0; i < arena.elements.length; i++) {
+    if (arena.elements[i].type === 'ship' && arena.elements[i].error) {
+      for (var j = 0; j < clients.length; j++) {
+        if (clients[j].guid === arena.elements[i].guid) {
+          console.log('SENDING ERROR TO ' + arena.elements[i].ship.name);
+          clients[j].emit('player_error', JSON.stringify(arena.elements[i].error));
+          break;
+        }
+      }
+    }
   }
 
   setTimeout(sendStatus, 16);

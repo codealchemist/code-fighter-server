@@ -19,6 +19,13 @@ module.exports = class Player {
 						time: new Date() - this.initialDate
 					})
 				break;
+				case 'errorOnUpdate':
+					this.resolvePromise({
+						newUserProperties: message.data,
+						error: message.error,
+						time: new Date() - this.initialDate
+					})
+				break;
 			}
 
 		})
@@ -49,7 +56,7 @@ module.exports = class Player {
 
 			setTimeout(() => {
 				// out of time, resolve with previous values
-				resolve({
+				this.resolvePromise({
 					newUserProperties: userProperties,
 					time: new Date() - this.initialDate
 				})

@@ -19,6 +19,7 @@
   "dependencies": {
     "body-parser": "^1.17.1",
     "express": "^4.15.2",
+    "guid": "0.0.12",
     "socket.io": "^1.7.3",
     "vectors": "^0.1.0"
   }
