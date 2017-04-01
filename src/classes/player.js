@@ -4,7 +4,7 @@ const timeout = 5
 var n
 
 module.exports = class Player {
-	constructor(id) {
+	constructor(id, code) {
 		n = cp.fork(resolve(__dirname, '../players/index.js'));
 
 		this.childProcess = function() {
