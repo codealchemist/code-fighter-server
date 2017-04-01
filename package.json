@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "standard",
+    "test-focus": "standard-focus",
+    "start": "node src/index.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +23,7 @@
     "express": "^4.15.2",
     "guid": "0.0.12",
     "socket.io": "^1.7.3",
+    "standard-focus": "^1.1.2",
     "vectors": "^0.1.0"
   }
 }

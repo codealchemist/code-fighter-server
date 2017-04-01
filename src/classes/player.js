@@ -1,10 +1,11 @@
-const cp = require('child_process');
+const {resolve} = require('path')
+const cp = require('child_process')
 const timeout = 5
-var n;
+var n
 
 module.exports = class Player {
-	constructor(id, code) {
-		n = cp.fork(`./players/index.js`);
+	constructor(id) {
+		n = cp.fork(resolve(__dirname, '../players/index.js'));
 
 		this.childProcess = function() {
 			return this
