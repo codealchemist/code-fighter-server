@@ -15,6 +15,7 @@ module.exports = class Bullet {
 
   update (elapsedTime, arenaStatus) {
     for (let i = 0; i < arenaStatus.elements.length; i++) {
+      // to avoid auto impact
       if (this.ownership !== arenaStatus.elements[i].ship) {
         // to avoid friend fire in the team mode
         if (this.team === undefined || this.team !== arenaStatus.elements[i].team) {

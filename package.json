@@ -24,6 +24,7 @@
     "guid": "0.0.12",
     "socket.io": "^1.7.3",
     "standard-focus": "^1.1.2",
-    "vectors": "^0.1.0"
+    "vectors": "^0.1.0",
+    "winston": "^2.3.1"
   }
 }

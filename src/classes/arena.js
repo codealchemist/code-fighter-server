@@ -1,3 +1,4 @@
+const Logger = require('../modules/logger')
 var mag = require('vectors/mag')(2)
 var normalize = require('vectors/normalize')(2)
 var dot = require('vectors/dot')(2)
@@ -11,6 +12,8 @@ let updateCount = 0;
 
 module.exports = class Arena {
   constructor() {
+    Logger.verbose('Arena - constructor')
+
     this.runing = false
     this.elements = []
     this.width = 800
@@ -18,18 +21,21 @@ module.exports = class Arena {
     this.playersPromise = []
   }
   start () {
-    console.log('Arena - start');
+    Logger.verbose('Arena - start')
+
     this.runing = true;
     initialTime = new Date();
     this.update(1)
   }
   stop () {
-    console.log('Arena - stop');
+    Logger.verbose('Arena - stop')
+
     this.runing = false;
   }
   update (elapsedTime) {
     if (updateCount > 500) {
-      console.log('Arena - update', elapsedTime)
+      Logger.verbose('Arena - 500 updates made')
+      Logger.silly('Last update cycle in ' + elapsedTime + 'ms')
       updateCount = 0
     }
     updateCount++
@@ -38,16 +44,17 @@ module.exports = class Arena {
     this.playersPromise.length = 0
 
     for (let element in this.elements) {
-        let currentElement = this.elements[element]
-        switch (currentElement.type) {
-          case 'ship':
-            this.playersPromise.push(this.updateShip(elapsedTime, currentElement))
-            break
-          case 'bullet':
-            this.updateBullet(elapsedTime, currentElement)
-            break
-        }
+      let currentElement = this.elements[element]
+      switch (currentElement.type) {
+        case 'ship':
+          this.playersPromise.push(this.updateShip(elapsedTime, currentElement))
+          break
+        case 'bullet':
+          this.updateBullet(elapsedTime, currentElement)
+        break
       }
+    }
+
     if (this.runing) {
       Promise.all(this.playersPromise).then(() => {
         setTimeout(() => {
@@ -55,7 +62,9 @@ module.exports = class Arena {
           initialTime = finalTime
         }, 0);
       }).catch((e) => {
-        console.error(e)
+        Logger.error(e)
+
+        this.update(finalTime - initialTime)
       })
 
     }
@@ -93,6 +102,7 @@ module.exports = class Arena {
       element.state.x += element.state.velocity * Math.cos(element.state.direction) * (elapsedTime / 1000)
       element.state.y += element.state.velocity * Math.sin(element.state.direction) * (elapsedTime / 1000)
       element.state.direction += element.state.angularVelocity * (elapsedTime / 1000)
+      element.state.direction = element.state.direction % (2 * Math.PI)
 
       // adjust position of elements
       if (element.state.x < element.ship.diameter) {
@@ -108,7 +118,7 @@ module.exports = class Arena {
         element.state.y = this.height - element.ship.diameter
       }
 
-      // fire if is not reloading and the player want to fire
+      // fire if is not reloading and the player wants to fire
       if (!element.state.reloadingBullet && element.ship.userProperties.fire) {
         element.ship.userProperties.fire = false
         element.state.reloadingBullet = element.ship.intrinsicProperties.reloadingTime
@@ -134,7 +144,7 @@ module.exports = class Arena {
         this.respawnShip(element)
       }
     }).catch((e) => {
-      console.error(e)
+      Logger.error(e)
     })
 
 
@@ -210,7 +220,7 @@ module.exports = class Arena {
       for (var i = 0; i < this.elements.length; i++) {
         if (this.elements[i].type === 'ship') {
           if (this.elements[i].ship.player.id === id) {
-            console.log('updatePlayer', this.elements[i].ship.player.id)
+            Logger.info('updatePlayer', this.elements[i].ship.player.id)
             this.elements[i].ship.player.changeCode(code)
             break
           }
@@ -218,35 +228,6 @@ module.exports = class Arena {
       }
     }
   }
-  changeShip (index, ship) {
-    this.elements[index] = {
-      type: 'ship',
-      ship: ship,
-      state: {
-        // initial values of a ship
-        x: Math.floor(Math.random() * this.width),
-        y: Math.floor(Math.random() * this.height),
-        direction: Math.floor(Math.random() * 360), // from 0 to 360
-        velocity: 0, // from 0 to maxVelocity
-        angularVelocity: 0, // from 0 to maxAngularVelocity
-        energy: ship.intrinsicProperties.maxEnergy,
-        deaths: 0
-      }
-    }
-    console.log('Ship changed.')
-    console.log('Elements: ', this.elements)
-  }
-
-  removeShip (ship) {
-    for (var i = 0; i < this.elements.length; i++) {
-      if (this.elements[i].ship === ship) {
-        this.elements.splice(i, 1)
-        break
-      }
-    }
-    this.elements.splice(this.elements.indexOf(ship), 1)
-  }
-
   getStatus (element) {
     // This method is in WIP
     var resp
