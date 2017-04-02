@@ -105,9 +105,9 @@ let lastFrameSend = new Date();
 sendStatus()
 function sendStatus () {
 
-  if (arena.elements.length > 0) {
-    cachedFrames.push(JSON.parse(JSON.stringify(arena.elements)))
-  }
+
+  cachedFrames.push(JSON.parse(JSON.stringify(arena.elements)))
+
 
   if(new Date() - lastFrameSend > framesInterlive) {
     Logger.log(cachedFrames.length > 60 ? 'silly' : 'warn','Sending ' + cachedFrames.length + ' frames')

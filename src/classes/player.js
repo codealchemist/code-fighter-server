@@ -10,6 +10,7 @@ module.exports = class Player {
 		this.getChildProcess = () => {}
 		this.deleteAndCreateChildProcess()
 
+		this.updateCount = 0
 	}
 	changeCode(code) {
 		this.code = code
@@ -23,6 +24,8 @@ module.exports = class Player {
 		})
 	}
 	update(elapsedTime, userProperties, arenaStatus) {
+		this.updateCount++
+
 		if (!this.getChildProcess()) {
 			console.warn('childProcess not ready')
 			// make this transparent to outside
@@ -31,7 +34,10 @@ module.exports = class Player {
 				time: 0
 			})
 		}
+
 		this.updateInProcess = true;
+		let currentUpdate = this.updateCount
+
 
 		this.initialDate = new Date();
 		this.getChildProcess().send({
@@ -43,12 +49,13 @@ module.exports = class Player {
 			}
 		});
 
+
 		return new Promise((resolve, reject) => {
 			// wait for child process response
 			this.resolvePromise = resolve
 
 			setTimeout(() => {
-				if (this.updateInProcess && false) {
+				if (this.updateInProcess && currentUpdate === this.updateCount) {
 					// out of time, resolve with previous values
 					this.resolvePromise({
 						newUserProperties: userProperties,
