@@ -11,6 +11,7 @@ module.exports = class Player {
 		this.deleteAndCreateChildProcess()
 
 		this.updateCount = 0
+		this.messages = []
 	}
 	changeCode(code) {
 		this.code = code
@@ -82,7 +83,7 @@ module.exports = class Player {
 	createChildProcess() {
 		console.info('createChildProcess')
 		return new Promise((resolve, reject) => {
-			let newChildProcess = cp.fork(path.resolve(__dirname, '../players/index.js'));
+			let newChildProcess = cp.fork(path.resolve(__dirname, '../players/index.js'), [], { silent:true });
 
 
 			newChildProcess.send({
@@ -99,10 +100,11 @@ module.exports = class Player {
 						if (this.updateInProcess) {
 							this.resolvePromise({
 								newUserProperties: message.data,
+								messages: this.messages,
 								error: message.error,
 								time: new Date() - this.initialDate
 							})
-
+							this.messages.length = 0
 							this.updateInProcess = false
 						}
 					break;
@@ -125,6 +127,9 @@ module.exports = class Player {
 			}
 			newChildProcess.on('message', initializeCallback)
 
+			newChildProcess.stdout.on('data', (data) => {
+				this.messages.push(data)
+			});
 		})
 	}
 	deleteChildProcess() {

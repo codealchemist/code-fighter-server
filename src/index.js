@@ -66,17 +66,17 @@ app.get('/stop', function(req, res) {
 app.post('/player',bodyParser.json(), function(req, res) {
   Logger.verbose('post -> /player')
 
-  if (players[req.body.username]) {
+  if (players[req.body.guid]) {
     Logger.verbose('Player update')
 
-    players[req.body.username] = req.body.code
+    players[req.body.guid] = req.body.code
     arena.updatePlayer(req.body.username, req.body.code)
   } else {
     Logger.verbose('Player new')
 
-    players[req.body.username] = req.body.code
-    // Temporal, id === username
-    arena.addPlayer(req.body.username, req.body.username, req.body.color, req.body.guid, new classes.Player(req.body.username, req.body.code))
+    players[req.body.guid] = req.body.code
+
+    arena.addPlayer(req.body.guid, req.body.username, req.body.color, req.body.guid, new classes.Player(req.body.username, req.body.code))
   }
 
   res.send('ok');
@@ -120,12 +120,27 @@ function sendStatus () {
 
   // check for errors
   for (var i = 0; i < arena.elements.length; i++) {
-    if (arena.elements[i].type === 'ship' && arena.elements[i].error) {
-      for (var j = 0; j < clients.length; j++) {
-        if (clients[j].guid === arena.elements[i].guid) {
+    if (arena.elements[i].type === 'ship') {
+      if (arena.elements[i].error) {
+        let clie = clients.find((client) => {
+          return client.guid === arena.elements[i].guid
+        })
+        if (clie) {
           Logger.debug('Sending error to ' + arena.elements[i].ship.name, arena.elements[i].error)
-          clients[j].emit('player_error', JSON.stringify(arena.elements[i].error));
-          break;
+          clie.emit('player_error', JSON.stringify(arena.elements[i].error));
+        } else {
+          // the guid wasn't found
+        }
+      }
+      if (arena.elements[i].messages) {
+        let clie = clients.find((client) => {
+          return client.guid === arena.elements[i].guid
+        })
+        if (clie) {
+          Logger.debug('Sending message to ' + arena.elements[i].ship.name, arena.elements[i].messages)
+          clie.emit('player_message', JSON.stringify(arena.elements[i].messages));
+        } else {
+          // the guid wasn't found
         }
       }
     }

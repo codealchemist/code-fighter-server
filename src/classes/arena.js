@@ -76,7 +76,9 @@ module.exports = class Arena {
       element.error = error
 
       element.ship.userProperties = newUserProperties;
+
       // check the output of the player
+
       if (Math.abs(element.ship.userProperties.aceleration) > element.ship.intrinsicProperties.maxAceleration) {
         element.ship.userProperties.aceleration = element.ship.intrinsicProperties.maxAceleration * Math.sign(element.ship.userProperties.aceleration)
       }
@@ -161,6 +163,10 @@ module.exports = class Arena {
       for (var i = 0; i < this.elements.length; i++) {
         if (this.elements[i].ship === element.bullet.hasCollidedWithShip) {
           this.elements[i].state.energy--
+          if(this.elements[i].state.energy === 0) {
+            // add point to the owner of the bullet
+            this.ownership.kills ++;
+          }
           break
         }
       }
@@ -206,7 +212,8 @@ module.exports = class Arena {
         velocity: 0, // from 0 to maxVelocity
         angularVelocity: 0, // from 0 to maxAngularVelocity
         energy: ship.intrinsicProperties.maxEnergy,
-        deaths: 0
+        deaths: 0,
+        kills: 0
       },
       guid
     })
