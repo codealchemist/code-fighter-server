@@ -165,9 +165,15 @@ module.exports = class Arena {
           this.elements[i].state.energy--
           if(this.elements[i].state.energy === 0) {
             // add point to the owner of the bullet
-            this.ownership.kills ++;
+            this.elements.forEach((el) => {
+
+              // Temporal, compare using the name
+              if (el.type === 'ship' && el.ship === element.bullet.ownership) {
+                el.state.kills ++;
+              }
+            })
+            break
           }
-          break
         }
       }
       // kill the bullet
