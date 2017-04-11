@@ -9,6 +9,7 @@ const Guid = require('guid')
 const port = 3001
 const clients = []
 const classes = require('./classes')
+require('now-logs')('code-fighter-server-super-awesome-logs')
 
 
 
